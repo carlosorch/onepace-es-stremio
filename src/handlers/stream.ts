@@ -156,7 +156,8 @@ export async function handleStream(type: string, id: string): Promise<{ streams:
     return { streams: [] };
   }
 
-  const streams: StremioStream[] = [];
+  const torrentStreams: StremioStream[] = [];
+  const pixelDrainStreams: StremioStream[] = [];
 
   // 1. Add official torrent stream if available
   const arc = dataBase.arcs.en.find((a: any) => a.part === season);
@@ -172,7 +173,7 @@ export async function handleStream(type: string, id: string): Promise<{ streams:
         const fileSize = richEp.file.size || 'N/A';
 
         // Stremio supports torrents natively!
-        streams.push({
+        torrentStreams.push({
           infoHash: fileHash,
           fileIdx: fileIdx,
           title: `🧲 Torrent • 1080p • Multi Audio (Subs ES)\n${fileName} (${fileSize})`,
@@ -208,7 +209,7 @@ export async function handleStream(type: string, id: string): Promise<{ streams:
       for (const file of matchingFiles) {
         const proxyUrl = getStreamUrl(file.id);
         const sizeMiB = (file.size / 1024 / 1024).toFixed(1);
-        streams.push({
+        pixelDrainStreams.push({
           url: proxyUrl,
           title: `📺 Direct Stream • Español Hardsub\n${file.name} (${sizeMiB} MiB)`,
           name: 'PixelDrain (Proxy)',
@@ -253,7 +254,7 @@ export async function handleStream(type: string, id: string): Promise<{ streams:
             title = `📺 Direct Stream (Versión Extendida) • Shaved Egghead ES\n${file.name} (${sizeMiB} MiB)`;
           }
 
-          streams.push({
+          pixelDrainStreams.push({
             url: proxyUrl,
             title,
             name: 'PixelDrain (Proxy)',
@@ -269,5 +270,5 @@ export async function handleStream(type: string, id: string): Promise<{ streams:
     }
   }
 
-  return { streams };
+  return { streams: [...pixelDrainStreams, ...torrentStreams] };
 }
