@@ -6,6 +6,7 @@ import { StremioStream } from '../types';
 import { getStreamUrl } from '../lib/proxy';
 
 const dataPath = path.join(__dirname, '../data/data.json');
+const englishPdPath = path.join(__dirname, '../data/english_pixeldrain.json');
 
 // Read and parse ladyisatis data.json
 let dataBase: any = null;
@@ -15,6 +16,16 @@ try {
   console.log('[Stream Handler] Loaded data.json successfully.');
 } catch (e: any) {
   console.error('[Stream Handler] Error loading data.json:', e.message);
+}
+
+// Read and parse English PixelDrain list mapping
+let englishPdMap: Record<string, { title: string, listId: string }> = {};
+try {
+  const rawEngPd = fs.readFileSync(englishPdPath, 'utf8');
+  englishPdMap = JSON.parse(rawEngPd);
+  console.log('[Stream Handler] Loaded english_pixeldrain.json successfully.');
+} catch (e: any) {
+  console.error('[Stream Handler] Error loading english_pixeldrain.json:', e.message);
 }
 
 // Caching structure for PixelDrain lists
@@ -267,6 +278,60 @@ export async function handleStream(type: string, id: string): Promise<{ streams:
       }
     } catch (err: any) {
       console.error('[Stream Handler] Error adding Egghead PixelDrain streams:', err.message);
+    }
+  }
+
+  // 3. Fallback to English PixelDrain streams for seasons/arcs that do not have Spanish PixelDrain streams (or are missing Spanish subs)
+  if (pixelDrainStreams.length === 0 && englishPdMap[season.toString()]) {
+    try {
+      const engPdInfo = englishPdMap[season.toString()];
+      const pdFiles = await fetchPixelDrainList(engPdInfo.listId);
+      
+      const arc = dataBase.arcs.en.find((a: any) => a.part === season);
+      if (arc) {
+        const epObj = arc.episodes.find((e: any) => parseInt(e.episode, 10) === episodeNum);
+        if (epObj) {
+          const crcKey = epObj.standard; // e.g. "216595EE"
+          
+          const matchingFiles = pdFiles.filter((f) => {
+            if (f.name.endsWith('.zip')) return false;
+            // Match by CRC32 hash in brackets or anywhere in the filename
+            return f.name.toLowerCase().includes(crcKey.toLowerCase());
+          });
+
+          // Fallback matching: if no file matched by CRC32, try matching by the padded episode number
+          if (matchingFiles.length === 0) {
+            const paddedEp = episodeNum.toString().padStart(2, '0'); // e.g. "01"
+            const matchedByNum = pdFiles.filter((f) => {
+              if (f.name.endsWith('.zip')) return false;
+              
+              // Clean out the chapter range like [431-432] or [720p] to avoid matching episode number with chapter numbers
+              const cleanedName = f.name.replace(/\[\d+-\d+\]/g, '').replace(/\[\d+p\]/g, '');
+              
+              // Look for standalone padded episode number
+              const numRegex = new RegExp(`(?:\\b|\\s|_-)${paddedEp}(?:\\b|\\s|_\\[|\\.mkv)`, 'i');
+              return numRegex.test(cleanedName);
+            });
+            matchingFiles.push(...matchedByNum);
+          }
+
+          for (const file of matchingFiles) {
+            const proxyUrl = getStreamUrl(file.id);
+            const sizeMiB = (file.size / 1024 / 1024).toFixed(1);
+            pixelDrainStreams.push({
+              url: proxyUrl,
+              title: `📺 Direct Stream • English Sub (One Pace)\n${file.name} (${sizeMiB} MiB)`,
+              name: 'PixelDrain (Proxy)',
+              behaviorHints: {
+                notWebReady: true,
+                bingeGroup: `${bingeGroupPrefix}-${season}`,
+              }
+            });
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error(`[Stream Handler] Error adding English fallback PixelDrain streams for season ${season}:`, err.message);
     }
   }
 
