@@ -1,5 +1,6 @@
 // src/index.ts
 import express from 'express';
+import * as path from 'path';
 import { addonBuilder, getRouter } from 'stremio-addon-sdk';
 import { manifest } from './manifest';
 import { handleCatalog } from './handlers/catalog';
@@ -40,6 +41,12 @@ app.use((req, res, next) => {
   res.header('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
   next();
 });
+
+// Serve static public assets (logo, images, etc.)
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+  maxAge: '7d',
+  immutable: true,
+}));
 
 // Register PixelDrain proxy endpoint
 app.get('/proxy/:fileId', (req, res) => {

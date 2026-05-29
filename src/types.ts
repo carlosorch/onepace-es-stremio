@@ -42,6 +42,7 @@ export interface StremioMeta {
   type: string;
   name: string;
   poster?: string;
+  posterShape?: 'poster' | 'square' | 'landscape';
   background?: string;
   description?: string;
   releaseInfo?: string;

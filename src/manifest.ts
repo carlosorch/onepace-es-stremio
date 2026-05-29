@@ -23,7 +23,7 @@ export const manifest: Manifest = {
   resources: ['catalog', 'meta', 'stream'],
   idPrefixes: ['onepace-es-v4', 'onepace-es-v3', 'onepace-es-v2'],
   logo: 'https://onepace.net/images/one-pace-logo.png',
-  background: 'https://images5.alphacoders.com/131/1313706.png', // Premium looking One Piece high-res background
+  background: 'https://image.tmdb.org/t/p/original/4Mt7WHox67uJ1yErwTBFcV8KWgG.jpg',
   behaviorHints: {
     configurable: false,
   },

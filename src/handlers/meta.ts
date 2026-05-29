@@ -1,7 +1,7 @@
-// src/handlers/meta.ts
 import * as fs from 'fs';
 import * as path from 'path';
 import { StremioMeta, StremioVideo } from '../types';
+import { getArcThumbnail } from '../data/arc-images';
 
 const dataPath = path.join(__dirname, '../data/data.json');
 
@@ -70,6 +70,7 @@ export async function handleMeta(type: string, id: string): Promise<{ meta: Stre
         episode: episodeNum,
         overview,
         released,
+        thumbnail: getArcThumbnail(season),
       });
     }
   }
@@ -109,6 +110,7 @@ export async function handleMeta(type: string, id: string): Promise<{ meta: Stre
           episode: episodeNum,
           overview,
           released,
+          thumbnail: getArcThumbnail(season),
         });
       }
     }
@@ -120,13 +122,17 @@ export async function handleMeta(type: string, id: string): Promise<{ meta: Stre
     return a.episode - b.episode;
   });
 
+  // Determine the base URL for self-hosted assets (logo, etc.)
+  const baseUrl = process.env.BASE_URL || 'http://localhost:7000';
+
   const meta: StremioMeta = {
     id,
     type: 'series',
     name: 'One Pace en Español',
-    poster: 'https://image.tmdb.org/t/p/original/kuOOvNZWcUWmkftvmoiWEHk0Fsk.jpg',
-    background: 'https://images5.alphacoders.com/131/1313706.png',
-    logo: 'https://onepace.net/images/one-pace-logo.png',
+    posterShape: 'poster',
+    poster: 'https://image.tmdb.org/t/p/w500/dB4EDhre2dsC2kxYDavyKWqLQwi.jpg',
+    background: 'https://image.tmdb.org/t/p/original/4Mt7WHox67uJ1yErwTBFcV8KWgG.jpg',
+    logo: `${baseUrl}/public/logo.png`,
     description: 'One Pace es un proyecto hecho por fans que recorta el anime One Piece para alinearlo con el ritmo del manga original de Eiichiro Oda, eliminando el relleno. Esta versión en español unifica el catálogo oficial (con subtítulos y audio en español integrados) y las ediciones fan-made de "Spanish Pace" (ediciones exclusivas en español para arcos no cubiertos oficialmente, como Wano 45+ y Egghead).',
     genres: ['Animación', 'Fantasía', 'Aventura', 'Acción', 'Anime'],
     releaseInfo: '1999-',
